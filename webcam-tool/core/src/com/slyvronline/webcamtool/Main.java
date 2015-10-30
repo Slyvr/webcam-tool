@@ -58,7 +58,7 @@ public static final String TITLE = "Webcam-Tool";
 		LoadMenus.load();
 		
 		try {
-			String pw = new FileHandle("C:/Apps/pw.txt").readString();
+			String pw = new FileHandle("C:/Apps/pw2.txt").readString();
 			IpCamDeviceRegistry.register("DLink Cam1", "http://admin:"+pw+"@192.168.1.126:80/image.jpg", IpCamMode.PULL);
 			IpCamDeviceRegistry.register("DLink Cam2", "http://admin:"+pw+"@192.168.1.127:80/image.jpg", IpCamMode.PULL);
 		} catch (MalformedURLException e) {

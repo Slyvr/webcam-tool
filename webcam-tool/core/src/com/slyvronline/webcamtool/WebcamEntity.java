@@ -64,7 +64,7 @@ public class WebcamEntity {
 				String fileName = "C:/Users/Matthew/Google Drive/private/webcamfeed/"+webcam.getName();
 				fileName += "_"+System.currentTimeMillis()+".png";
 				ImageIO.write(image, "PNG", new File(fileName));
-				Utils.sendEmail(this.getName(), fileName);
+				if (motionArea > 4) Utils.sendEmail(this.getName(), fileName);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
