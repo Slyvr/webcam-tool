@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.slyvronline.webcamtool.Main;
+import com.slyvronline.webcamtool.WebcamEntity;
 
 public class Renderer {
 
@@ -38,24 +39,10 @@ public class Renderer {
 		
 		Main.getGlobal().getCurrentMenu().render(batch);
 		
-		int x=0;
-		int y=0;
-		for(Texture camTexture : Main.getCamTextures()){
-			batch.draw(camTexture, x, y);
-			x+=camTexture.getWidth();
-			if (x >= Gdx.graphics.getWidth()-camTexture.getWidth()-50){
-				x=0;
-				y += camTexture.getHeight();
-			}
+		for(WebcamEntity we : Main.getWebcams()){
+			we.render(batch);
 		}
-		/*
-		Texture cam1 = new Texture(new FileHandle("DLink Cam1.png"));
-		Texture cam2 = new Texture(new FileHandle("DLink Cam2.png"));
 		
-		batch.draw(cam1, 100, 100);
-		
-		batch.draw(cam2, 200 + cam1.getWidth(), 100);
-		*/
 		batch.end();
 	}
 }

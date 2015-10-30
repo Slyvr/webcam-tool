@@ -15,6 +15,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.Rectangle;
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamMotionDetector;
 import com.github.sarxos.webcam.ds.ipcam.IpCamDeviceRegistry;
@@ -32,13 +33,14 @@ public class Main extends ApplicationAdapter {
 public static final String TITLE = "Webcam-Tool";
 	
 	static {
-		Webcam.setDriver(new IpCamDriver());
+		Webcam.setDriver(new MyCompositeDriver());
 	}
 
-	private static List<Webcam> webcams = null;
-	private static WebcamMotionDetector detector;
+	private static List<WebcamEntity> webcams = null;
 	
-	private static List<Texture> camTextures;
+	private int maxHeight;
+	private int x=0;
+	private int y=0;
 	
 	public static final float STEP = 1/60f;
 	private float accum;
@@ -56,47 +58,87 @@ public static final String TITLE = "Webcam-Tool";
 		LoadMenus.load();
 		
 		try {
-			IpCamDeviceRegistry.register("DLink Cam1", "http://admin:samurai89@192.168.1.126:80/image.jpg", IpCamMode.PULL);
-			IpCamDeviceRegistry.register("DLink Cam2", "http://admin:samurai89@192.168.1.127:80/image.jpg", IpCamMode.PULL);
+			String pw = new FileHandle("C:/Apps/pw.txt").readString();
+			IpCamDeviceRegistry.register("DLink Cam1", "http://admin:"+pw+"@192.168.1.126:80/image.jpg", IpCamMode.PULL);
+			IpCamDeviceRegistry.register("DLink Cam2", "http://admin:"+pw+"@192.168.1.127:80/image.jpg", IpCamMode.PULL);
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
 		
-		webcams = Webcam.getWebcams();
-		camTextures = new ArrayList<Texture>();
+		webcams = new ArrayList<WebcamEntity>();
 		
-		for(Webcam webcam : webcams){
-			webcam.open();
+		for(Webcam webcam : Webcam.getWebcams()){
+			webcams.add(createNewWebcamEntity(webcam));
 		}
 	}
-
-	@Override
-	public void render () {
-		camTextures = new ArrayList<Texture>();
-		for(Webcam webcam : webcams){
-			// get image
-			BufferedImage image = webcam.getImage();
-			/* Does not work with IP cameras
-			ByteBuffer bytes = webcam.getImageBytes();
-			Pixmap pixmap = new Pixmap(bytes.array(), 0, 0);
-			*/
-			
-			// save image to PNG file
-			String fileName = webcam.getName()+".png";
-			try {
-				ImageIO.write(image, "PNG", new File(fileName));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			camTextures.add(new Texture(new FileHandle(fileName)));
+	
+	public WebcamEntity createNewWebcamEntity(Webcam webcam){
+		WebcamEntity we = new WebcamEntity();
+		we.setWebcam(webcam);
+		
+		WebcamMotionDetector detector = new WebcamMotionDetector(webcam);
+		detector.setInterval(500); // one check per 500 ms
+		detector.setPixelThreshold(20);
+		detector.start();
+		we.setDetector(detector);
+		
+		we.setName(webcam.getName());
+		
+		webcam.open();
+		
+		BufferedImage image = webcam.getImage();
+		we.setPos(new Rectangle(x,y,image.getWidth(),image.getHeight()));
+		
+		if (image.getHeight() > maxHeight) maxHeight = image.getHeight();
+		x+=image.getWidth();
+		if (x >= Gdx.graphics.getWidth()-image.getWidth()-50){
+			x=0;
+			y += maxHeight;
 		}
 		
+		return we;
+	}
+
+	int camCheckCounter;
+	
+	@Override
+	public void render () {
 		accum += Gdx.graphics.getDeltaTime();
 		while(accum >= STEP) {
 			accum -= STEP;
+			
+			checkWebcamStatus();
+			checkNewWebcams();
+			
+			for(WebcamEntity we : webcams){
+				we.update();
+			}
+			
 			Updater.update();
 			Renderer.render();
+		}
+	}
+	
+	public void checkWebcamStatus(){
+		for(int i = webcams.size()-1; i>=0; i--){
+			Webcam webcam = webcams.get(i).getWebcam();
+			if(!webcam.isOpen()){
+				webcams.remove(i);
+			}
+		}
+	}
+	
+	public void checkNewWebcams(){
+		for(Webcam w : Webcam.getWebcams()){
+			boolean found=false;
+			for(WebcamEntity we : webcams){
+				if (w.getName().equals(we.getWebcam().getName())){
+					found=true;
+				}
+			}
+			if (!found){
+				webcams.add(createNewWebcamEntity(w));
+			}
 		}
 	}
 
@@ -124,29 +166,36 @@ public static final String TITLE = "Webcam-Tool";
 		return STEP;
 	}
 
-	public static List<Webcam> getWebcams() {
+	public static List<WebcamEntity> getWebcams() {
 		return webcams;
 	}
 
-	public static void setWebcams(List<Webcam> webcams) {
+	public static void setWebcams(List<WebcamEntity> webcams) {
 		Main.webcams = webcams;
 	}
 
-	public static WebcamMotionDetector getDetector() {
-		return detector;
+	public int getMaxHeight() {
+		return maxHeight;
 	}
 
-	public static void setDetector(WebcamMotionDetector detector) {
-		Main.detector = detector;
+	public void setMaxHeight(int maxHeight) {
+		this.maxHeight = maxHeight;
 	}
 
-	public static List<Texture> getCamTextures() {
-		return camTextures;
+	public int getX() {
+		return x;
 	}
 
-	public static void setCamTextures(List<Texture> camTextures) {
-		Main.camTextures = camTextures;
+	public void setX(int x) {
+		this.x = x;
 	}
-	
+
+	public int getY() {
+		return y;
+	}
+
+	public void setY(int y) {
+		this.y = y;
+	}
 	
 }

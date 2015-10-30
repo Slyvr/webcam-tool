@@ -25,7 +25,7 @@ public class LoadMenus {
 		menu.setName("main");
 		
 		ArrayList<Ent> ents = new ArrayList<Ent>();
-		
+		/*
 		Ent logo = new Ent();
 		logo.setName("logo");
 		logo.setImg(Main.getGlobal().getImgByName("Logo2_white"));
@@ -34,7 +34,7 @@ public class LoadMenus {
 				logo.getImg().getTex().getWidth(),
 				logo.getImg().getTex().getHeight()));
 		ents.add(logo);
-		
+		*/
 		menu.setEnts(ents);
 		
 		//Setup sub menus
